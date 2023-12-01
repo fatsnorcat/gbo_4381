@@ -16,7 +16,7 @@ MAX_CAPACITY = 50 # height in cm
 
 # max distance in cm for each ultrasonic sensor
 MAX_DISTANCE_MAIN = 500
-MAX_DISTANCE_BINS = 20
+MAX_DISTANCE_BINS = 50
 main_timeout = MAX_DISTANCE_MAIN * 60
 bins_timeout = MAX_DISTANCE_BINS * 60
 
@@ -51,7 +51,6 @@ def getGarbageSonar():
     distance = pingTime * 340.0 / 2.0 / 10000.0 # distance of sound speed 340m/s
     return distance
 
-
 # get measurement in cm for recycle
 def getRecycleSonar():
     GPIO.output(recycle_trigPin, GPIO.HIGH)
@@ -71,7 +70,6 @@ def getCompostSonar():
     return distance
 
 def setup():
-    GPIO.setmode(GPIO.BOARD) # physical board numbering
     GPIO.setup(main_trigPin, GPIO.OUT)
     GPIO.setup(main_echoPin, GPIO.IN)
     GPIO.setup(garbage_trigPin, GPIO.OUT)
@@ -94,5 +92,5 @@ def loop():
         time.sleep(5) # wait 5 second
 
 def capacity(bin):
-    capacity = (bin / MAX_CAPACITY) * 100
+    capacity = ((MAX_CAPACITY - bin) / MAX_CAPACITY) * 100
     return capacity

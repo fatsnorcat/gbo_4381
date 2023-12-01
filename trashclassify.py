@@ -1,23 +1,29 @@
-# import libraries
-from gpiozero import LED
 # from picamera import PiCamera
 from time import *
 # from lobe import ImageModel
 import RPi.GPIO as GPIO
 import ultrasonic
-import pygame
+# import pygame
 
-# leds
-green_garbage = LED(37)
-red_garbage = LED(39)
+# leds, using gpio numbering
+GPIO.setmode(GPIO.BOARD) # physical board numbering
+green_garbage = 31
+GPIO.setup(green_garbage, GPIO.OUT)
+red_garbage = 32
+GPIO.setup(red_garbage, GPIO.OUT)
 
-# green_recycle = LED()
-# red_recycle = LED()
+# green_recycle = 
+# GPIO.setup(green_recycle, GPIO.OUT)
+# red_recycle = 
+# GPIO.setup(red_recycle, GPIO.OUT)
 
-# green_compost = LED()
-# red_compost = LED()
+# green_compost = 
+# GPIO.setup(green_compost, GPIO.OUT)
+# red_compost = 
+# GPIO.setup(red_compost, GPIO.OUT)
 
 # status_light = LED()
+# GPIO.setup(status_light, GPIO.OUT)
 
 # camera = PiCamera()
 
@@ -36,13 +42,13 @@ def take_photo():
 def led_select(label):
     print(label)
     if (label == "garbage"):
-        green_garbage.on()
+        GPIO.output(green_garbage, GPIO.HIGH)
         sleep(10)
     # if (label == "recycle"):
-    #     green_recycle.on()
+    #     GPIO.output(green_recycle, GPIO.HIGH)
     #     sleep(10)
     # if (label == "compost"):
-    #     green_compost.on()
+        #     GPIO.output(green_compost, GPIO.HIGH)
     #     sleep(10)
     else:
         green_garbage.off()
@@ -52,17 +58,17 @@ def led_select(label):
 
 if __name__ == '__main__':
     print("Starting...")
-    time.sleep(1)
+    sleep(1)
     ultrasonic.setup() # setups GPIO numbering and led
-    pygame.mixer.init() # load music player
-    pygame.mixer.music.load("Instructions.m4a")
+    #pygame.mixer.init() # load music player
+    #pygame.mixer.music.load("Instructions.m4a")
     try:
         while(True):
             main_dist = ultrasonic.getMainSonar()
             print("Object detected within %.2f cm"%(main_dist))
-            if (main_dist < 500 & main_dist > 35):
-                pygame.music.play() # sends instructions within 35 cm to 5m
-                time.sleep(1)
+            if (main_dist < 500 and main_dist > 35):
+                #pygame.music.play() # sends instructions within 35 cm to 5m
+                sleep(1)
             #     take_photo()
             #     result = model.predict_from_file('/home/pi/TrashClassifer/images/image.jpg')
             #     led_select(result.prediction)
@@ -73,9 +79,9 @@ if __name__ == '__main__':
             garbage_capacity = ultrasonic.capacity(garbage_bin)
             print("Capacity is %.2f full"%(garbage_capacity))
             if (garbage_capacity > 90):
-                red_garbage.on()
+                GPIO.output(red_garbage, GPIO.HIGH)
             else:
-                red_garbage.off()
+                GPIO.output(red_garbage, GPIO.LOW)
             # recycle_bin = ultrasonic.getRecycleSonar()
             # capacity = ultrasonic.capacity(recycle_bin)
             # print("Capacity is %.2f full"%(recycle_capacity))
@@ -90,6 +96,6 @@ if __name__ == '__main__':
             #     red_compost.on()
             # else:
             #     red_compost.off()
-            time.sleep(5) # wait 5 seconds
+            sleep(5) # wait 5 seconds
     except KeyboardInterrupt:
         GPIO.cleanup()
