@@ -94,5 +94,5 @@ def loop():
         time.sleep(5) # wait 5 second
 
 def capacity(bin):
-    capacity = bin / MAX_CAPACITY
+    capacity = (bin / MAX_CAPACITY) * 100
     return capacity
