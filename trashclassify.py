@@ -1,9 +1,16 @@
-# from picamera import PiCamera
+from picamera import PiCamera
 from time import *
-# from lobe import ImageModel
+from lobe import ImageModel
 import RPi.GPIO as GPIO
 import ultrasonic
-# import pygame
+import pygame
+from webhook import send_webhook
+
+webhook_url = 'PASTE_WEBHOOK_URL_HERE'
+
+# Initialize the last sent notification time
+last_notification_time = 0
+notification_interval = 600  # 10 minutes in seconds
 
 # leds, using gpio numbering
 GPIO.setmode(GPIO.BOARD) # physical board numbering
@@ -60,15 +67,26 @@ if __name__ == '__main__':
     print("Starting...")
     sleep(1)
     ultrasonic.setup() # setups GPIO numbering and led
-    #pygame.mixer.init() # load music player
-    #pygame.mixer.music.load("Instructions.m4a")
+    pygame.mixer.init() # load music player
+    pygame.mixer.music.load("Instructions.m4a")
+
+    message_played = False
+    last_detection_time = 0
+
     try:
         while(True):
             main_dist = ultrasonic.getMainSonar()
+            current_time = time.time()
+
             print("Object detected within %.2f cm"%(main_dist))
-            if (main_dist < 500 and main_dist > 35):
-                #pygame.music.play() # sends instructions within 35 cm to 5m
-                sleep(1)
+            # Check if someone is within range
+            if (35 < main_dist < 500):
+                if (not message_played or (current_time - last_detection_time) > 15): # Message is not replaying itself 15 second of last play
+                    pygame.music.play() # plays instructions
+                    message_played = True
+                    last_detection_time = current_time
+            elif (message_played and (current_time - last_detection_time)):
+                message_played = False
             #     take_photo()
             #     result = model.predict_from_file('/home/pi/TrashClassifer/images/image.jpg')
             #     led_select(result.prediction)
@@ -78,8 +96,11 @@ if __name__ == '__main__':
             garbage_bin = ultrasonic.getGarbageSonar()
             garbage_capacity = ultrasonic.capacity(garbage_bin)
             print("Capacity is %.2f full"%(garbage_capacity))
-            if (garbage_capacity > 90):
+            if (garbage_capacity > 80):
                 GPIO.output(red_garbage, GPIO.HIGH)
+                if (current_time - last_notification_time > notification_interval):
+                    send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
+                    last_notification_time = current_time
             else:
                 GPIO.output(red_garbage, GPIO.LOW)
             # recycle_bin = ultrasonic.getRecycleSonar()
