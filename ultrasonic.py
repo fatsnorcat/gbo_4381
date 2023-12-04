@@ -2,22 +2,16 @@ import RPi.GPIO as GPIO
 import time
 
 # pins
-main_trigPin = 16
-main_echoPin = 18
-garbage_trigPin = 11
-garbage_echoPin = 13
-# recycle_trigPin = 1
-# recycle_echoPin = 2
-# compost_trigPin = 3
-# compost_echoPin = 4
-
-# size of bin
-MAX_CAPACITY = 50 # height in cm
+garbage_trigPin = 16
+garbage_echoPin = 18
+recycle_trigPin = 1
+recycle_echoPin = 2
+compost_trigPin = 3
+compost_echoPin = 4
 
 # max distance in cm for each ultrasonic sensor
-MAX_DISTANCE_MAIN = 500
-MAX_DISTANCE_BINS = 50
-main_timeout = MAX_DISTANCE_MAIN * 60
+# distance cannot be lower than 50
+MAX_DISTANCE_BINS = 100
 bins_timeout = MAX_DISTANCE_BINS * 60
 
 # pulse time of pin timeout
@@ -32,15 +26,6 @@ def pulseIn(pin, level, timeOut):
             return 0;
     pulseTime = (time.time() - t0) * 1000000
     return pulseTime
-
-# get measurement in cm
-def getMainSonar():
-    GPIO.output(main_trigPin, GPIO.HIGH)
-    time.sleep(0.00001)
-    GPIO.output(main_trigPin, GPIO.LOW)
-    pingTime = pulseIn(main_echoPin, GPIO.HIGH, main_timeout)
-    distance = pingTime * 340.0 / 2.0 / 10000.0 # distance of sound speed 340m/s
-    return distance
 
 # get measurement in cm for garbage
 def getGarbageSonar():
@@ -70,27 +55,13 @@ def getCompostSonar():
     return distance
 
 def setup():
-    GPIO.setup(main_trigPin, GPIO.OUT)
-    GPIO.setup(main_echoPin, GPIO.IN)
     GPIO.setup(garbage_trigPin, GPIO.OUT)
     GPIO.setup(garbage_echoPin, GPIO.IN)
-    # GPIO.setup(recycle_trigPin, GPIO.OUT)
-    # GPIO.setup(recycle_echoPin, GPIO.IN)
-    # GPIO.setup(compost_trigPin, GPIO.OUT)
-    # GPIO.setup(compost_echoPin, GPIO.IN)
-
-def loop():
-    while(True):
-        main_dist = getMainSonar()
-        print("Motion detected within %.2f cm"%(main_dist))
-        garbage_bin = getGarbageSonar()
-        print("Capacity is %.2f cm high"%(garbage_bin))
-        # recycle_bin = getRecycleSonar()
-        # print("Capacity is %.2f cm high"%(recycle_bin))
-        # compost_bin = getCompostSonar()
-        # print("Capacity is %.2f cm high"%(compost_bin))
-        time.sleep(5) # wait 5 second
+    GPIO.setup(recycle_trigPin, GPIO.OUT)
+    GPIO.setup(recycle_echoPin, GPIO.IN)
+    GPIO.setup(compost_trigPin, GPIO.OUT)
+    GPIO.setup(compost_echoPin, GPIO.IN)
 
 def capacity(bin):
-    capacity = ((MAX_CAPACITY - bin) / MAX_CAPACITY) * 100
+    capacity = ((MAX_DISTANCE_BINS - bin) / MAX_DISTANCE_BINS) * 100
     return capacity

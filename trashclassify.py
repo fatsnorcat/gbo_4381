@@ -1,22 +1,32 @@
-from picamera import PiCamera
-from time import *
-from lobe import ImageModel
+import time
 import RPi.GPIO as GPIO
 import ultrasonic
 import pygame
 from webhook import send_webhook
+import cv2
+from picamera2 import Picamera2
 
-webhook_url = 'PASTE_WEBHOOK_URL_HERE'
+# haarcascade and picamera init
+face_detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
+cv2.startWindowThread()
+
+picam2 = Picamera2()
+picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
+picam2.start()
+
+webhook_url = 'https://discord.com/api/webhooks/1180843360295067778/Qtzz-yuvcDb1h4hptWfLDprB_HWWlN4kz23082--97vZTj04gaJ804-G5uVDC2-CDU6V'
 
 # Initialize the last sent notification time
-last_notification_time = 0
+g_last_notification_time = 0
+r_last_notification_time = 0
+c_last_notification_time = 0
 notification_interval = 600  # 10 minutes in seconds
 
 # leds, using gpio numbering
 GPIO.setmode(GPIO.BOARD) # physical board numbering
-green_garbage = 31
+green_garbage = 37
 GPIO.setup(green_garbage, GPIO.OUT)
-red_garbage = 32
+red_garbage = 40
 GPIO.setup(red_garbage, GPIO.OUT)
 
 # green_recycle = 
@@ -29,94 +39,80 @@ GPIO.setup(red_garbage, GPIO.OUT)
 # red_compost = 
 # GPIO.setup(red_compost, GPIO.OUT)
 
-# status_light = LED()
-# GPIO.setup(status_light, GPIO.OUT)
-
-# camera = PiCamera()
-
-# load lobe tf model
-# model = ImageModel.load('/home/pi/Lobe/model')
-
-def take_photo():
-    status_light.on
-    sleep(3)
-    camera.start_preview(alpha=200)
-    sleep(3)
-    camera.capture('/home/pi/TrashClassifer/images')
-    camera.stop_preview()
-    sleep(1)
-
-def led_select(label):
-    print(label)
-    if (label == "garbage"):
-        GPIO.output(green_garbage, GPIO.HIGH)
-        sleep(10)
-    # if (label == "recycle"):
-    #     GPIO.output(green_recycle, GPIO.HIGH)
-    #     sleep(10)
-    # if (label == "compost"):
-        #     GPIO.output(green_compost, GPIO.HIGH)
-    #     sleep(10)
-    else:
-        green_garbage.off()
-        # green_recycle.off()
-        # green_compost.off()
-        # status_light.off()
-
 if __name__ == '__main__':
     print("Starting...")
-    sleep(1)
+    time.sleep(1)
     ultrasonic.setup() # setups GPIO numbering and led
     pygame.mixer.init() # load music player
-    pygame.mixer.music.load("Instructions.m4a")
+    pygame.mixer.music.load("Instructions.mp3")
 
+    current_time = time.time()
     message_played = False
     last_detection_time = 0
+    t_end = time.time()
 
     try:
         while(True):
-            main_dist = ultrasonic.getMainSonar()
-            current_time = time.time()
-
-            print("Object detected within %.2f cm"%(main_dist))
-            # Check if someone is within range
-            if (35 < main_dist < 500):
+            im = picam2.capture_array()
+            grey = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY) 
+            faces = face_detector.detectMultiScale(grey, 1.1, 3)
+            print("Checking faces")
+	
+            for (x, y, w, h) in faces:
+                cv2.rectangle(im, (x, y), (x + w, y + h), (0, 255, 0))
+                print("Face found!")
+                GPIO.output(green_garbage, GPIO.HIGH)
                 if (not message_played or (current_time - last_detection_time) > 15): # Message is not replaying itself 15 second of last play
-                    pygame.music.play() # plays instructions
+                    pygame.mixer.music.play() # plays instructions
                     message_played = True
                     last_detection_time = current_time
-            elif (message_played and (current_time - last_detection_time)):
-                message_played = False
-            #     take_photo()
-            #     result = model.predict_from_file('/home/pi/TrashClassifer/images/image.jpg')
-            #     led_select(result.prediction)
-            # else:
-            #     status_light.pulse(2,1)
-            #     sleep(1)
-            garbage_bin = ultrasonic.getGarbageSonar()
-            garbage_capacity = ultrasonic.capacity(garbage_bin)
-            print("Capacity is %.2f full"%(garbage_capacity))
-            if (garbage_capacity > 80):
-                GPIO.output(red_garbage, GPIO.HIGH)
-                if (current_time - last_notification_time > notification_interval):
-                    send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
-                    last_notification_time = current_time
-            else:
-                GPIO.output(red_garbage, GPIO.LOW)
-            # recycle_bin = ultrasonic.getRecycleSonar()
-            # capacity = ultrasonic.capacity(recycle_bin)
-            # print("Capacity is %.2f full"%(recycle_capacity))
-            # if (recycle_capacity > 90):
-            #     red_recycle.on()
-            # else:
-            #     red_recycle.off()
-            # compost_bin = ultrasonic.getCompostSonar()
-            # capacity = ultrasonic.capacity(compost_bin)
-            # print("Capacity is %.2f full"%(compost_capacity))
-            # if (compost_capacity > 90):
-            #     red_compost.on()
-            # else:
-            #     red_compost.off()
-            sleep(5) # wait 5 seconds
+                elif (message_played and (current_time - last_detection_time)):
+                    message_played = False
+            
+            cv2.imshow("Faces", im)
+            
+            # check garbage every x seconds
+            t_start = time.time()
+            if (t_start >= t_end):
+                garbage_bin = ultrasonic.getGarbageSonar()
+                garbage_capacity = ultrasonic.capacity(garbage_bin)
+                print("Capacity is %.2f full"%(garbage_capacity))
+                if (garbage_capacity > 80):
+                    GPIO.output(red_garbage, GPIO.HIGH)
+                    if (current_time - g_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
+                        g_last_notification_time = current_time
+                else:
+                   GPIO.output(red_garbage, GPIO.LOW)
+                recycle_bin = ultrasonic.getRecycleSonar()
+                recycle_capacity = ultrasonic.capacity(recycle_bin)
+                print("Capacity is %.2f full"%(recycle_capacity))
+                
+                if (recycle_capacity > 80):
+                  GPIO.output(red_recycle, GPIO.HIGH)
+                    if (current_time - r_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Recycle bin is more than %.2f full. Please clear it."%(recycle_capacity))
+                        r_last_notification_time = current_time
+                else:
+                    GPIO.output(red_recycle, GPIO.LOW)
+                compost_bin = ultrasonic.getCompostSonar()
+                compost_capacity = ultrasonic.capacity(compost_bin)
+                print("Capacity is %.2f full"%(compost_capacity))
+                
+                if (compost_capacity > 80):
+                   GPIO.output(red_compost, GPIO.HIGH)
+                   if (current_time - c_last_notification_time > notification_interval):
+                       send_webhook(webhook_url, "Alert: Compost bin is more than %.2f full. Please clear it."%(compost_capacity))
+                       c_last_notification_time = current_time
+                else:
+                    GPIO.output(red_compost, GPIO.LOW)
+                t_end += 10
+            
+            time.sleep(0.5) # higher number cause delay on camera
+                
     except KeyboardInterrupt:
+        print("Exiting program...")
+        
+    finally:        
         GPIO.cleanup()
+        cv2.destroyAllWindows()
