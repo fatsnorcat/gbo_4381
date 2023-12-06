@@ -2,12 +2,12 @@ import RPi.GPIO as GPIO
 import time
 
 # pins
-garbage_trigPin = 16
-garbage_echoPin = 18
-recycle_trigPin = 1
-recycle_echoPin = 2
-compost_trigPin = 3
-compost_echoPin = 4
+garbage_trigPin = 10
+garbage_echoPin = 8
+recycle_trigPin = 16
+recycle_echoPin = 12
+compost_trigPin = 22
+compost_echoPin = 18 
 
 # max distance in cm for each ultrasonic sensor
 # distance cannot be lower than 50
