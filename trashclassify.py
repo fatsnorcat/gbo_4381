@@ -18,9 +18,9 @@ picam2.start()
 
 model = ImageModel.load('/home/pi/Lobe/model')
 
-yellow_led = LED(17) #garbage
-blue_led = LED(27) #recycle
-green_led = LED(22) #compost
+garbage_led = LED(10) #garbage
+recycle_led = LED(16) #recycle
+compost_led = LED(22) #compost
 
 webhook_url = 'https://discord.com/api/webhooks/1180843360295067778/Qtzz-yuvcDb1h4hptWfLDprB_HWWlN4kz23082--97vZTj04gaJ804-G5uVDC2-CDU6V'
 
@@ -121,21 +121,21 @@ if __name__ == '__main__':
 		trash_type = result.prediction
 
 		if trash_type == "garbage":
-			yellow_led.on()
+			garbage_led.on()
 			sleep(5)
-			yellow_led.off()
+			garbage_led.off()
 		elif trash_type == "recycle":
-			blue_led.on()
+			recycle_led.on()
 			sleep(5)
-			blue_led.off()
+			recycle_led.off()
 		elif trash_type == "compost":
-			green_led.on()
+			compost_led.on()
 			sleep(5)
-			green_led.off()
+			compost_led.off()
 		else:
-        		yellow_led.off()
-        		blue_led.off()
-        		green_led.off()
+        		garbage_led.off()
+        		recycle_led.off()
+        		compost_led.off()
 
 	
                 t_end += 10
