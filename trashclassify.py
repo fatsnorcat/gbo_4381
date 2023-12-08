@@ -5,6 +5,8 @@ import pygame
 from webhook import send_webhook
 import cv2
 from picamera2 import Picamera2
+from lobe import ImageModel 
+from gpiozero import LED
 
 # haarcascade and picamera init
 face_detector = cv2.CascadeClassifier("haarcascade_frontalface_default.xml")
@@ -13,6 +15,12 @@ cv2.startWindowThread()
 picam2 = Picamera2()
 picam2.configure(picam2.create_preview_configuration(main={"format": 'XRGB8888', "size": (640, 480)}))
 picam2.start()
+
+model = ImageModel.load('/home/pi/Lobe/model')
+
+yellow_led = LED(17) #garbage
+blue_led = LED(27) #recycle
+green_led = LED(22) #compost
 
 webhook_url = 'https://discord.com/api/webhooks/1180843360295067778/Qtzz-yuvcDb1h4hptWfLDprB_HWWlN4kz23082--97vZTj04gaJ804-G5uVDC2-CDU6V'
 
@@ -38,6 +46,7 @@ GPIO.setup(red_garbage, GPIO.OUT)
 # GPIO.setup(green_compost, GPIO.OUT)
 # red_compost = 
 # GPIO.setup(red_compost, GPIO.OUT)
+
 
 if __name__ == '__main__':
     print("Starting...")
@@ -106,6 +115,29 @@ if __name__ == '__main__':
                        c_last_notification_time = current_time
                 else:
                     GPIO.output(red_compost, GPIO.LOW)
+		
+
+		result = model.predict(im)
+		trash_type = result.prediction
+
+		if trash_type == "garbage":
+			yellow_led.on()
+			sleep(5)
+			yellow_led.off()
+		elif trash_type == "recycle":
+			blue_led.on()
+			sleep(5)
+			blue_led.off()
+		elif trash_type == "compost":
+			green_led.on()
+			sleep(5)
+			green_led.off()
+		else:
+        		yellow_led.off()
+        		blue_led.off()
+        		green_led.off()
+
+	
                 t_end += 10
             
             time.sleep(0.5) # higher number cause delay on camera
