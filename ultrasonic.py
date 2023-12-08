@@ -13,6 +13,8 @@ compost_echoPin = 18
 # distance cannot be lower than 50
 MAX_DISTANCE_BINS = 100
 bins_timeout = MAX_DISTANCE_BINS * 60
+BIN_HEIGHT = 25 # height of bin
+GAP_BETWEEN = 20 # distance between sensor and bin
 
 # pulse time of pin timeout
 def pulseIn(pin, level, timeOut):
@@ -26,6 +28,13 @@ def pulseIn(pin, level, timeOut):
             return 0;
     pulseTime = (time.time() - t0) * 1000000
     return pulseTime
+    
+def distance_gap(dist):
+    dist -= GAP_BETWEEN
+    if dist < 0:
+        return 0
+    else:
+        return dist
 
 # get measurement in cm for garbage
 def getGarbageSonar():
@@ -34,6 +43,7 @@ def getGarbageSonar():
     GPIO.output(garbage_trigPin, GPIO.LOW)
     pingTime = pulseIn(garbage_echoPin, GPIO.HIGH, bins_timeout)
     distance = pingTime * 340.0 / 2.0 / 10000.0 # distance of sound speed 340m/s
+    distance_gap(distance)
     return distance
 
 # get measurement in cm for recycle
@@ -43,6 +53,7 @@ def getRecycleSonar():
     GPIO.output(recycle_trigPin, GPIO.LOW)
     pingTime = pulseIn(recycle_echoPin, GPIO.HIGH, bins_timeout)
     distance = pingTime * 340.0 / 2.0 / 10000.0 # distance of sound speed 340m/s
+    distance_gap(distance)
     return distance
 
 # get measurement in cm for compost
@@ -52,6 +63,7 @@ def getCompostSonar():
     GPIO.output(compost_trigPin, GPIO.LOW)
     pingTime = pulseIn(compost_echoPin, GPIO.HIGH, bins_timeout)
     distance = pingTime * 340.0 / 2.0 / 10000.0 # distance of sound speed 340m/s
+    distance_gap(distance)
     return distance
 
 def setup():
@@ -63,5 +75,5 @@ def setup():
     GPIO.setup(compost_echoPin, GPIO.IN)
 
 def capacity(bin):
-    capacity = ((MAX_DISTANCE_BINS - bin) / MAX_DISTANCE_BINS) * 100
+    capacity = ((BIN_HEIGHT - bin) / BIN_HEIGHT) * 100
     return capacity
