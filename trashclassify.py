@@ -25,13 +25,15 @@ notification_interval = 600  # 10 minutes in seconds
 
 # leds, using gpio numbering
 GPIO.setmode(GPIO.BOARD) # physical board numbering
-red_garbage = 36
+red_garbage = 40
 GPIO.setup(red_garbage, GPIO.OUT)
+red_recycle = 38
+GPIO.setup(red_recycle, GPIO.OUT)
 
 red_recycle = 38
 GPIO.setup(red_recycle, GPIO.OUT)
 
-red_compost = 40
+red_compost = 36
 GPIO.setup(red_compost, GPIO.OUT)
 
 if __name__ == '__main__':
@@ -39,7 +41,7 @@ if __name__ == '__main__':
     time.sleep(1)
     ultrasonic.setup() # setups GPIO numbering and led
     pygame.mixer.init() # load music player
-    pygame.mixer.music.load("Instructions.mp3")
+    pygame.mixer.music.load("Instructions.wav")
 
     current_time = time.time()
     message_played = False
@@ -59,6 +61,7 @@ if __name__ == '__main__':
                 
                 if (not message_played or (current_time - last_detection_time) > 15): # Message is not replaying itself 15 second of last play
                     pygame.mixer.music.play() # plays instructions
+                    time.sleep(3)
                     message_played = True
                     last_detection_time = current_time
                 elif (message_played and (current_time - last_detection_time)):
@@ -72,45 +75,41 @@ if __name__ == '__main__':
                 garbage_bin = ultrasonic.getGarbageSonar()
                 print(garbage_bin, "gbin")
                 garbage_capacity = ultrasonic.capacity(garbage_bin)
-                print("Capacity is %.2f full"%(garbage_capacity))
-
-                if (garbage_capacity > 80):
-                    GPIO.output(red_garbage, GPIO.HIGH)
-                    if (current_time - g_last_notification_time > notification_interval):
-                        send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
-                        g_last_notification_time = current_time
-                else:
-                   GPIO.output(red_garbage, GPIO.LOW)
-                   
-                time.sleep(0.2)
+                print("Garbage Bin Capacity is %.2f full"%(garbage_capacity))
                 
                 recycle_bin = ultrasonic.getRecycleSonar()
                 recycle_capacity = ultrasonic.capacity(recycle_bin)
-                print("Capacity is %.2f full"%(recycle_capacity))
-                
-                if (recycle_capacity > 80):
-                    GPIO.output(red_recycle, GPIO.HIGH)
-                    if (current_time - r_last_notification_time > notification_interval):
-                        send_webhook(webhook_url, "Alert: Recycle bin is more than %.2f full. Please clear it."%(recycle_capacity))
-                        r_last_notification_time = current_time
-                else:
-                    GPIO.output(red_recycle, GPIO.LOW)
-                    
-                time.sleep(0.2)
+                print("Recycle Bin Capacity is %.2f full"%(recycle_capacity))
                 
                 compost_bin = ultrasonic.getCompostSonar()
                 compost_capacity = ultrasonic.capacity(compost_bin)
                 print("Capacity is %.2f full"%(compost_capacity))
                 
-                if (compost_capacity > 80):
+                if (compost_capacity > 70):
                    GPIO.output(red_compost, GPIO.HIGH)
                    if (current_time - c_last_notification_time > notification_interval):
                        send_webhook(webhook_url, "Alert: Compost bin is more than %.2f full. Please clear it."%(compost_capacity))
                        c_last_notification_time = current_time
+                
+                elif (recycle_capacity > 70):
+                    GPIO.output(red_recycle, GPIO.HIGH)
+                    if (current_time - r_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Recycle bin is more than %.2f full. Please clear it."%(recycle_capacity))
+                        r_last_notification_time = current_time
+
+                elif (garbage_capacity > 70):
+                    GPIO.output(red_garbage, GPIO.HIGH)
+                    if (current_time - g_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
+                        g_last_notification_time = current_time
+                
                 else:
+                    GPIO.output(red_garbage, GPIO.LOW)
+                    GPIO.output(red_recycle, GPIO.LOW)
                     GPIO.output(red_compost, GPIO.LOW)
+  
                 t_end += 10
-            
+                
             time.sleep(0.5) # higher number cause delay on camera
                 
     except KeyboardInterrupt:
