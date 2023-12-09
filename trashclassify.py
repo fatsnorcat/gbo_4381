@@ -76,10 +76,27 @@ if __name__ == '__main__':
                 print(garbage_bin, "gbin")
                 garbage_capacity = ultrasonic.capacity(garbage_bin)
                 print("Garbage Bin Capacity is %.2f full"%(garbage_capacity))
+
+                if (garbage_capacity > 70):
+                    GPIO.output(red_garbage, GPIO.HIGH)
+                    if (current_time - g_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
+                        g_last_notification_time = current_time
+                else:
+                    GPIO.output(red_garbage, GPIO.LOW)
                 
                 recycle_bin = ultrasonic.getRecycleSonar()
                 recycle_capacity = ultrasonic.capacity(recycle_bin)
                 print("Recycle Bin Capacity is %.2f full"%(recycle_capacity))
+
+                if (recycle_capacity > 70):
+                    GPIO.output(red_recycle, GPIO.HIGH)
+                    if (current_time - r_last_notification_time > notification_interval):
+                        send_webhook(webhook_url, "Alert: Recycle bin is more than %.2f full. Please clear it."%(recycle_capacity))
+                        r_last_notification_time = current_time
+
+                else:
+                    GPIO.output(red_recycle, GPIO.LOW)
                 
                 compost_bin = ultrasonic.getCompostSonar()
                 compost_capacity = ultrasonic.capacity(compost_bin)
@@ -90,22 +107,7 @@ if __name__ == '__main__':
                    if (current_time - c_last_notification_time > notification_interval):
                        send_webhook(webhook_url, "Alert: Compost bin is more than %.2f full. Please clear it."%(compost_capacity))
                        c_last_notification_time = current_time
-                
-                elif (recycle_capacity > 70):
-                    GPIO.output(red_recycle, GPIO.HIGH)
-                    if (current_time - r_last_notification_time > notification_interval):
-                        send_webhook(webhook_url, "Alert: Recycle bin is more than %.2f full. Please clear it."%(recycle_capacity))
-                        r_last_notification_time = current_time
-
-                elif (garbage_capacity > 70):
-                    GPIO.output(red_garbage, GPIO.HIGH)
-                    if (current_time - g_last_notification_time > notification_interval):
-                        send_webhook(webhook_url, "Alert: Garbage bin is more than %.2f full. Please clear it."%(garbage_capacity))
-                        g_last_notification_time = current_time
-                
                 else:
-                    GPIO.output(red_garbage, GPIO.LOW)
-                    GPIO.output(red_recycle, GPIO.LOW)
                     GPIO.output(red_compost, GPIO.LOW)
   
                 t_end += 10
